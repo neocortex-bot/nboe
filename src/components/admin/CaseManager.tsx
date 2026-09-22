@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Upload, FileSpreadsheet, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, FileSpreadsheet, Eye, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import CaseForm from "./CaseForm";
 import AssetUploader from "./AssetUploader";
 import ExcelImporter from "./ExcelImporter";
+import { Link } from "react-router-dom";
 
 interface ClinicalCase {
   id: string;
@@ -23,6 +26,9 @@ interface ClinicalCase {
   questions_text: string;
   answer_key_text: string;
   show_results_to_candidate: boolean;
+  status?: string;
+  source?: string;
+  rubric_mode?: string;
   created_by?: string | null;
 }
 
@@ -31,6 +37,7 @@ const CaseManager = () => {
   const [showForm, setShowForm] = useState(false);
   const [assetCaseId, setAssetCaseId] = useState<string | null>(null);
   const [showImporter, setShowImporter] = useState(false);
+  const [examGroup, setExamGroup] = useState("oral_board");
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user, isMasterAdmin } = useAuth();
@@ -64,6 +71,10 @@ const CaseManager = () => {
           ...c,
           answer_key_text: ak?.answer_key_text ?? c.answer_key_text,
           checklist_rubric: ak?.checklist_rubric ?? c.checklist_rubric,
+          // Normalize: published by default if status missing (older rows)
+          status: c.status ?? "published",
+          source: c.source ?? (c.created_by ? "admin" : "agent_api"),
+          rubric_mode: c.rubric_mode ?? (Array.isArray(c.checklist_rubric) || Array.isArray((c.checklist_rubric as any)?.items) ? "checklist" : "none"),
         } as ClinicalCase;
       });
     },
@@ -96,6 +107,8 @@ const CaseManager = () => {
     setEditingCase(null);
   };
 
+  const filteredCases = cases.filter((clinicalCase) => clinicalCase.exam_mode === examGroup);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -110,15 +123,24 @@ const CaseManager = () => {
         </div>
       </CardHeader>
       <CardContent>
+        <Tabs value={examGroup} onValueChange={setExamGroup} className="mb-5">
+          <TabsList>
+            <TabsTrigger value="oral_board">Oral Board</TabsTrigger>
+            <TabsTrigger value="panel_exam">Panel</TabsTrigger>
+          </TabsList>
+        </Tabs>
         {isLoading ? (
           <p className="text-muted-foreground">Loading...</p>
-        ) : cases.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">No clinical cases yet. Create your first one.</p>
+        ) : filteredCases.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">
+            Belum ada soal {examGroup === "oral_board" ? "Oral Board" : "Panel"}.
+          </p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Mode</TableHead>
                 <TableHead>Time (s)</TableHead>
                 <TableHead>Rubric Items</TableHead>
@@ -126,15 +148,47 @@ const CaseManager = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cases.map((c) => (
+              {filteredCases.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell className="font-medium">{c.title}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      {c.source === 'agent_api' && (
+                        <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-200">
+                          AI
+                        </Badge>
+                      )}
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
+                        c.status === 'published' 
+                          ? 'bg-green-100 text-green-800 border-green-200'
+                          : c.status === 'draft'
+                          ? 'bg-red-100 text-red-800 border-red-200'
+                          : 'bg-gray-100 text-gray-800 border-gray-200'
+                      }`}>
+                        {c.status === 'published' && 'Published'}
+                        {c.status === 'draft' && 'Pending Review'}
+                        {c.status === 'rejected' && 'Rejected'}
+                      </span>
+                      {c.rubric_mode !== 'checklist' && (
+                        <Badge variant="outline" className="text-xs bg-orange-100 text-orange-800 border-orange-200">
+                          <AlertTriangle className="h-3 w-3 inline mr-1" />
+                          No Rubric
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{c.exam_mode === "oral_board" ? "Oral Board" : "Panel Exam"}</TableCell>
                   <TableCell>{c.time_limit_seconds}</TableCell>
                   <TableCell>{Array.isArray(c.checklist_rubric) ? c.checklist_rubric.length : (Array.isArray(c.checklist_rubric?.items) ? c.checklist_rubric.items.length : 0)}</TableCell>
                   <TableCell className="text-right space-x-2">
                     {canManage(c) ? (
                       <>
+                        {/* Link to preview page for full-width review */}
+                        <Link to={`/admin/case/preview/${c.id}`}>
+                          <Button variant="ghost" size="icon" title="Review in Preview">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
                         <Button variant="ghost" size="icon" onClick={() => setAssetCaseId(c.id)}>
                           <Upload className="h-4 w-4" />
                         </Button>

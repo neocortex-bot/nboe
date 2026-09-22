@@ -34,7 +34,11 @@ interface ScoreReport {
   prioritizedImprovements?: string[];
 }
 
-const ResultsViewer = () => {
+interface ResultsViewerProps {
+  examMode: string;
+}
+
+const ResultsViewer = ({ examMode }: ResultsViewerProps) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
@@ -45,12 +49,16 @@ const ResultsViewer = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("exam_results")
-        .select("*, profiles:candidate_id(full_name, email), exam_sessions:session_id(status, case_id, clinical_cases:case_id(title))")
+        .select("*, profiles:candidate_id(full_name, email), exam_sessions:session_id(status, case_id, clinical_cases:case_id(title, exam_mode))")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
   });
+
+  const filteredResults = results.filter(
+    (result: any) => result.exam_sessions?.clinical_cases?.exam_mode === examMode
+  );
 
   useEffect(() => {
     if (!expandedId) return;
@@ -174,13 +182,13 @@ const ResultsViewer = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ClipboardCheck className="h-5 w-5" /> Exam Results
+          <ClipboardCheck className="h-5 w-5" /> Exam Results — {examMode === "oral_board" ? "Oral Board" : "Panel"}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <p className="text-muted-foreground">Loading...</p>
-        ) : results.length === 0 ? (
+        ) : filteredResults.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">No exam results yet.</p>
         ) : (
           <Table>
@@ -194,7 +202,7 @@ const ResultsViewer = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {results.map((r: any) => {
+              {filteredResults.map((r: any) => {
                 const scoreDisplay = getOverallDisplay(r.ai_score_report);
                 const parsed = parseScoreReport(r.ai_score_report);
                 return (

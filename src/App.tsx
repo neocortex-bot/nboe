@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import CasePreview from "./pages/admin/CasePreview"; // NEW: Preview page
 import StationDisplay from "./pages/StationDisplay";
 import ExamEntry from "./pages/ExamEntry";
 import ExamMobile from "./pages/ExamMobile";
@@ -32,6 +33,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin>
                   <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/admin/case/preview/:id" 
+              element={
+                <ProtectedRoute requireAdmin>
+                  <CasePreview />
                 </ProtectedRoute>
               }
             />

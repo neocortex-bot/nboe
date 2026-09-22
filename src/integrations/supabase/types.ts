@@ -130,7 +130,12 @@ export type Database = {
           initial_prompt: string
           questions_text: string
           reading_time_seconds: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rubric_mode: string
           show_results_to_candidate: boolean
+          source: string
+          status: string
           time_limit_seconds: number
           title: string
         }
@@ -144,7 +149,12 @@ export type Database = {
           initial_prompt?: string
           questions_text?: string
           reading_time_seconds?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rubric_mode?: string
           show_results_to_candidate?: boolean
+          source?: string
+          status?: string
           time_limit_seconds?: number
           title: string
         }
@@ -158,11 +168,24 @@ export type Database = {
           initial_prompt?: string
           questions_text?: string
           reading_time_seconds?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rubric_mode?: string
           show_results_to_candidate?: boolean
+          source?: string
+          status?: string
           time_limit_seconds?: number
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clinical_cases_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exam_results: {
         Row: {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,28 +10,36 @@ import { Copy, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 10;
 
-const DeployedStationsTable = () => {
+interface DeployedStationsTableProps {
+  examMode: string;
+}
+
+const DeployedStationsTable = ({ examMode }: DeployedStationsTableProps) => {
   const [page, setPage] = useState(0);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const { data: stationsResult, isLoading } = useQuery({
-    queryKey: ["deployed_stations", page],
+    queryKey: ["deployed_stations", examMode, page],
     queryFn: async () => {
-      // Get unique station tokens with their sequence info
-      const from = page * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
-
-      const { data, error, count } = await supabase
+      const { data, error } = await supabase
         .from("exam_sessions")
-        .select("id, station_token, status, created_at, clinical_cases(title), profiles!exam_sessions_current_candidate_id_fkey(full_name, nim)", { count: "exact" })
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        .select("id, station_token, status, created_at, clinical_cases(title, exam_mode), profiles!exam_sessions_current_candidate_id_fkey(full_name, nim)")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return { sessions: data || [], total: count || 0 };
+      const matchingSessions = (data || []).filter(
+        (session: any) => session.clinical_cases?.exam_mode === examMode
+      );
+      const from = page * PAGE_SIZE;
+      return {
+        sessions: matchingSessions.slice(from, from + PAGE_SIZE),
+        total: matchingSessions.length,
+      };
     },
   });
+
+  useEffect(() => setPage(0), [examMode]);
 
   const sessions = stationsResult?.sessions || [];
   const totalPages = Math.ceil((stationsResult?.total || 0) / PAGE_SIZE);
@@ -92,7 +100,7 @@ const DeployedStationsTable = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Deployed Sessions</CardTitle>
+        <CardTitle>Deployed Sessions — {examMode === "oral_board" ? "Oral Board" : "Panel"}</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (

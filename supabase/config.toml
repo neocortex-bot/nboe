@@ -15,3 +15,6 @@ verify_jwt = false
 [functions.ingest-case]
 verify_jwt = false
 
+
+[functions.case-admin]
+verify_jwt = false

@@ -175,6 +175,7 @@ const ExcelImporter = ({ onClose }: ExcelImporterProps) => {
                 isCritical: r.is_critical,
               })),
             },
+            rubric_mode: c.rubric.length > 0 ? "checklist" : "none",
           })
           .select("id")
           .single();

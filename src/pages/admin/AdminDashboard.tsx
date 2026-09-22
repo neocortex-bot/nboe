@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +10,7 @@ import { LogOut, BookOpen, Users, Radio } from "lucide-react";
 
 const AdminDashboard = () => {
   const { signOut, user } = useAuth();
+  const [sessionExamMode, setSessionExamMode] = useState("oral_board");
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,8 +45,14 @@ const AdminDashboard = () => {
           </TabsContent>
           <TabsContent value="sessions">
             <div className="space-y-6">
-              <SessionManager />
-              <ResultsViewer />
+              <Tabs value={sessionExamMode} onValueChange={setSessionExamMode}>
+                <TabsList>
+                  <TabsTrigger value="oral_board">Oral Board</TabsTrigger>
+                  <TabsTrigger value="panel_exam">Panel</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <SessionManager examMode={sessionExamMode} />
+              <ResultsViewer examMode={sessionExamMode} />
             </div>
           </TabsContent>
         </Tabs>

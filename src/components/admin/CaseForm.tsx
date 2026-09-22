@@ -84,6 +84,8 @@ const CaseForm = ({ existingCase, onClose }: CaseFormProps) => {
         // but the authoritative source is now case_answer_keys
         answer_key_text: answerKeyText,
         checklist_rubric: rubricData as any,
+        // Deteksi mode penilaian: daftar tilik aktif hanya bila enabled & ada items
+        rubric_mode: rubricData.enabled && rubricData.items.length > 0 ? "checklist" : "none",
       };
 
       let caseId = existingCase?.id;
