@@ -48,7 +48,9 @@ CONTOH POLA KALIMAT (setiap butir diucapkan sebagai pernyataan tersendiri):
 KASUS: ${cc?.title ?? ""}
 ${cc?.initial_prompt ? `SKENARIO:\n${cc.initial_prompt}\n` : ""}
 ${cc?.questions_text ? `PERTANYAAN:\n${cc.questions_text}\n` : ""}
-${keys?.answer_key_text ? `KUNCI JAWABAN:\n${keys.answer_key_text}\n` : ""}
+${keys?.answer_key_text?.trim()
+  ? `KUNCI JAWABAN (acuan utama — jawaban wajib sejalan dengan kunci ini):\n${keys.answer_key_text}\n`
+  : `KUNCI JAWABAN: (TIDAK TERSEDIA — soal ini belum memiliki kunci jawaban. Susun jawaban HANYA dari rubrik di bawah dan pengetahuan pedoman terkini, dan jangan mengarang angka atau kriteria yang tidak ada di rubrik.)\n`}
 ${rubric.length ? `RUBRIK:\n${rubric.map((r, i) => `${i + 1}. ${r.text} (${r.points} poin${r.isCritical ? ", KRITIS" : ""})`).join("\n")}` : ""}`;
 
     return examStream(async () => {
